@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DEKOBOKO</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; min-height: 100vh;
+    background: #12181a;
+    color: #e8e2d0;
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    user-select: none;
+  }
+  #app {
+    max-width: 440px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 24px;
+  }
+  .topbar {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    padding: 0 2px;
+  }
+  .stats {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1f6058;
+    letter-spacing: 0.5px;
+  }
+  .topbar-actions { display: flex; gap: 6px; }
+  .topbar-actions button {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f6058;
+    background: #142523;
+    border: 1px solid #2f5a51;
+    border-radius: 6px;
+    padding: 5px 11px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .topbar-actions button:active { transform: translateY(1px); }
+  #message {
+    height: 18px;
+    font-size: 13px;
+    color: #e8b96b;
+    font-weight: 600;
+    margin-bottom: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  #message.show { opacity: 1; }
+
+  .board-frame {
+    position: relative;
+    border-radius: 8px;
+    padding: 6px;
+    background: linear-gradient(180deg, #16201f 0%, #101817 100%);
+    border: 1px solid #2a3733;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .game-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .side-col {
+    width: 63px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .preview-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #7c8a86;
+    font-weight: 600;
+  }
+  .next-box {
+    width: 63px; height: 63px;
+    border-radius: 8px;
+    border: 1px solid #33413c;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  }
+  .hold-box {
+    width: 50px; height: 50px;
+    border-radius: 7px;
+    border: 1px solid #33413c;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  }
+  #nextCreamBox, #holdCreamBox { background: #1f6058; }
+  #nextTealBox, #holdTealBox { background: #f3ecd9; }
+  .next-box canvas, .hold-box canvas { display:block; width:100%; height:100%; }
+  #boardCanvas {
+    display: block;
+    background: #0a1112;
+    border-radius: 3px;
+  }
+  .overlay {
+    position: absolute;
+    inset: 6px;
+    background: rgba(8,12,12,0.92);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    text-align: center;
+    padding: 20px;
+  }
+  .overlay.show { display: flex; }
+  .overlay h2 { margin: 0 0 8px; font-size: 20px; color: #e8b96b; }
+  .overlay p { margin: 4px 0; font-size: 13px; color: #cfd6d2; }
+  .overlay button {
+    margin-top: 16px;
+    padding: 10px 26px;
+    border-radius: 20px;
+    border: none;
+    background: #e8b96b;
+    color: #14201f;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .controls {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding: 0 2px;
+    gap: 4px;
+  }
+  .btn {
+    -webkit-user-select: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    flex: 0 0 auto;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 1px solid #33413c;
+    background: linear-gradient(180deg, #202b29, #161e1c);
+    color: #cfd6d2;
+    font-size: 17px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #0b1211, 0 4px 8px rgba(0,0,0,0.3);
+    touch-action: manipulation;
+  }
+  .btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #0b1211;
+  }
+  .btn-cream { background: linear-gradient(180deg, #f3ecd9, #ddd3b8); color: #1f6058; border-color: #c9bf9e; }
+  .btn-teal { background: linear-gradient(180deg, #24756a, #163f3a); color: #f3ecd9; border-color: #2f5a51; }
+  .btn-mod { color: #e8b96b; font-weight: 700; border-color: #e8b96b; font-size: 18px; }
+  .btn-mod.active { background: linear-gradient(180deg, #e8b96b, #b8863f); color: #14201f; }
+  .btn-sub { font-size: 7px; margin-top: 1px; opacity: 0.8; }
+  .dbltri { display:flex; flex-direction:column; align-items:center; line-height:0.55; font-size: 15px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="stats">LINE <span id="lineText">00</span>&nbsp;&nbsp;LEVEL <span id="levelText">00</span>&nbsp;&nbsp;SCORE <span id="scoreText">0000</span></div>
+    <div class="topbar-actions">
+      <button id="restartTopBtn" title="重來">↻</button>
+      <button id="optionBtn" title="Option">⚙</button>
+    </div>
+  </div>
+  <div id="message"></div>
+
+  <div class="game-row">
+    <div class="side-col">
+      <div class="preview-wrap">
+        <div class="preview-label">HOLD</div>
+        <div class="hold-box" id="holdCreamBox"><canvas id="holdCreamCanvas" width="50" height="50"></canvas></div>
+      </div>
+      <div class="preview-wrap">
+        <div class="preview-label">NEXT</div>
+        <div class="next-box" id="nextTealBox"><canvas id="nextTealCanvas" width="63" height="63"></canvas></div>
+      </div>
+    </div>
+    <div class="board-frame">
+      <canvas id="boardCanvas" width="200" height="560"></canvas>
+      <div class="overlay show" id="startOverlay">
+        <h2>DEKOBOKO</h2>
+        <p>◀▶：左右移動</p>
+        <p>▽△：加速落下</p>
+        <p>按住 A：◀▶變 ⟲ ⟳，▽△變直接落下</p>
+        <p>按住 B：Hold住白/綠方塊</p>
+        <button id="startBtn">開始遊戲</button>
+      </div>
+      <div class="overlay" id="gameOverOverlay">
+        <h2 id="goTitle">遊戲結束</h2>
+        <p id="goReason"></p>
+        <p id="goScore"></p>
+        <button id="restartBtn">再玩一次</button>
+      </div>
+      <div class="overlay" id="restartConfirmOverlay">
+        <h2>重新開始？</h2>
+        <p>目前的進度會消失</p>
+        <div style="display:flex; gap:12px; margin-top:16px;">
+          <button id="confirmRestartYes">確定</button>
+          <button id="confirmRestartNo">取消</button>
+        </div>
+      </div>
+    </div>
+    <div class="side-col">
+      <div class="preview-wrap">
+        <div class="preview-label">NEXT</div>
+        <div class="next-box" id="nextCreamBox"><canvas id="nextCreamCanvas" width="63" height="63"></canvas></div>
+      </div>
+      <div class="preview-wrap">
+        <div class="preview-label">HOLD</div>
+        <div class="hold-box" id="holdTealBox"><canvas id="holdTealCanvas" width="50" height="50"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="btn btn-mod" id="btnA">A</div>
+    <div class="btn btn-mod" id="btnB">B</div>
+    <div class="btn" id="btnLeft">◀</div>
+    <div class="btn" id="btnRight">▶</div>
+    <div class="btn btn-cream" id="btnCream">▽</div>
+    <div class="btn btn-teal" id="btnTeal">△</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const COLS = 10, ROWS = 28, CELL = 20;
+  const HALF = ROWS/2;
+
+  const FILL = { cream: '#f3ecd9', teal: '#1f6058' };
+  const BORDER = { cream: '#c9bf9e', teal: '#123a35' };
+
+  const SHAPES = {
+    I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+    O: [[1,1],[1,1]],
+    T: [[0,1,0],[1,1,1],[0,0,0]],
+    S: [[0,1,1],[1,1,0],[0,0,0]],
+    Z: [[1,1,0],[0,1,1],[0,0,0]],
+    J: [[1,0,0],[1,1,1],[0,0,0]],
+    L: [[0,0,1],[1,1,1],[0,0,0]]
+  };
+  const SHAPE_KEYS = Object.keys(SHAPES);
+
+  const boardCanvas = document.getElementById('boardCanvas');
+  const ctx = boardCanvas.getContext('2d');
+  const nextCreamCtx = document.getElementById('nextCreamCanvas').getContext('2d');
+  const nextTealCtx = document.getElementById('nextTealCanvas').getContext('2d');
+  const holdCreamCtx = document.getElementById('holdCreamCanvas').getContext('2d');
+  const holdTealCtx = document.getElementById('holdTealCanvas').getContext('2d');
+  const scoreText = document.getElementById('scoreText');
+  const lineText = document.getElementById('lineText');
+  const levelText = document.getElementById('levelText');
+  const startOverlay = document.getElementById('startOverlay');
+  const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const goTitle = document.getElementById('goTitle');
+  const goReason = document.getElementById('goReason');
+  const goScore = document.getElementById('goScore');
+  const messageEl = document.getElementById('message');
+
+  let board, creamPiece, tealPiece, score, timer, lockTimerInterval, running, over, msgTimeout, scoredPairs, touchedRows;
+  let totalLines = 0, level = 0;
+  let flashRowsSet = new Set(), flashOn = false, flashTimer = null;
+  let bgTop = 50, bgBottom = 50;
+  let nextCreamKey = null, nextTealKey = null;
+  let holdCreamKey = null, holdTealKey = null;
+  let aHeld = false, bHeld = false;
+
+  function emptyRow(){ return Array(COLS).fill(null); }
+
+  function initBoard(){
+    board = Array.from({length:ROWS}, emptyRow);
+    for (let r=0; r<HALF; r++) for (let c=0; c<COLS; c++) board[r][c] = {color:'teal'};
+    for (let r=HALF; r<ROWS; r++) for (let c=0; c<COLS; c++) board[r][c] = {color:'cream'};
+    scoredPairs = new Set();
+    touchedRows = new Set();
+  }
+
+  function rotateCW(m){
+    const n = m.length;
+    const res = Array.from({length:n}, ()=>Array(n).fill(0));
+    for (let r=0;r<n;r++) for (let c=0;c<n;c++) res[c][n-1-r] = m[r][c];
+    return res;
+  }
+  function rotateCCW(m){
+    const n = m.length;
+    const res = Array.from({length:n}, ()=>Array(n).fill(0));
+    for (let r=0;r<n;r++) for (let c=0;c<n;c++) res[n-1-c][r] = m[r][c];
+    return res;
+  }
+
+  function randomShapeKey(){ return SHAPE_KEYS[Math.floor(Math.random()*SHAPE_KEYS.length)]; }
+
+  function matrixBounds(matrix){
+    let first=-1, last=-1;
+    for (let r=0;r<matrix.length;r++){
+      if (matrix[r].some(v=>v)){ if (first===-1) first=r; last=r; }
+    }
+    return { first, last };
+  }
+
+  function isValid(color, matrix, row, col){
+    for (let r=0;r<matrix.length;r++){
+      for (let c=0;c<matrix.length;c++){
+        if (!matrix[r][c]) continue;
+        const br=row+r, bc=col+c;
+        if (bc<0||bc>=COLS||br<0||br>=ROWS) return false;
+        const cell = board[br][bc];
+        if (cell && cell.color===color) return false;
+      }
+    }
+    return true;
+  }
+
+  function countColor(color){
+    let n=0;
+    for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) if (board[r][c] && board[r][c].color===color) n++;
+    return n;
+  }
+
+  function applyBackground(topPct, bottomPct){
+    const grad = 'linear-gradient(to bottom, '
+      + '#f3ecd9 0%, #f3ecd9 ' + topPct + '%, '
+      + '#1f6058 ' + topPct + '%, #1f6058 100%)';
+    document.body.style.background = grad;
+  }
+
+  function animateBackgroundTo(targetTop, targetBottom){
+    const startTop = bgTop, startBottom = bgBottom;
+    const startTime = performance.now();
+    const duration = 550;
+    function step(now){
+      const t = Math.min(1, (now-startTime)/duration);
+      const eased = t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+      bgTop = startTop + (targetTop-startTop)*eased;
+      bgBottom = startBottom + (targetBottom-startBottom)*eased;
+      applyBackground(bgTop, bgBottom);
+      if (t<1) requestAnimationFrame(step);
+      else { bgTop=targetTop; bgBottom=targetBottom; applyBackground(bgTop,bgBottom); }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function showMessage(text){
+    messageEl.textContent = text;
+    messageEl.classList.add('show');
+    clearTimeout(msgTimeout);
+    msgTimeout = setTimeout(()=>{ messageEl.classList.remove('show'); }, 1400);
+  }
+
+  function drawPreviewBox(pctx, size, key, fillColor, strokeColor){
+    pctx.clearRect(0,0,size,size);
+    if (!key) return;
+    const m = SHAPES[key];
+    const n = m.length;
+    const cell = n===4 ? Math.floor(size*0.21) : Math.floor(size*0.28);
+    const offX = (size - n*cell)/2, offY = (size - n*cell)/2;
+    for (let r=0;r<n;r++){
+      for (let c=0;c<n;c++){
+        if (!m[r][c]) continue;
+        const x = offX+c*cell, y = offY+r*cell;
+        pctx.fillStyle = fillColor;
+        pctx.fillRect(x+1, y+1, cell-2, cell-2);
+        pctx.strokeStyle = strokeColor;
+        pctx.lineWidth = 1;
+        pctx.strokeRect(x+1.5, y+1.5, cell-3, cell-3);
+      }
+    }
+  }
+
+  function refreshNextPreviews(){
+    drawPreviewBox(nextCreamCtx, 63, nextCreamKey, '#f3ecd9', '#c9bf9e');
+    drawPreviewBox(nextTealCtx, 63, nextTealKey, '#1f6058', '#123a35');
+  }
+
+  function refreshHoldPreviews(){
+    drawPreviewBox(holdCreamCtx, 50, holdCreamKey, '#f3ecd9', '#c9bf9e');
+    drawPreviewBox(holdTealCtx, 50, holdTealKey, '#1f6058', '#123a35');
+  }
+
+  function spawnCreamFromKey(key){
+    const matrix = SHAPES[key].map(row=>row.slice());
+    const size = matrix.length;
+    const col = Math.floor((COLS-size)/2);
+    const { first } = matrixBounds(matrix);
+    const row = -first;
+    if (!isValid('cream', matrix, row, col)){
+      creamPiece = null;
+      render();
+      return endGame('觸頂了', '米色方塊已經沒有落腳的地方了');
+    }
+    creamPiece = { key, matrix, row, col, lastActionRotate:false, lockDeadline:null };
+  }
+
+  function spawnTealFromKey(key){
+    const matrix = SHAPES[key].map(row=>row.slice());
+    const size = matrix.length;
+    const col = Math.floor((COLS-size)/2);
+    const { last } = matrixBounds(matrix);
+    const row = (ROWS-1)-last;
+    if (!isValid('teal', matrix, row, col)){
+      tealPiece = null;
+      render();
+      return endGame('觸底了', '深藍綠色方塊已經沒有落腳的地方了');
+    }
+    tealPiece = { key, matrix, row, col, lastActionRotate:false, lockDeadline:null };
+  }
+
+  function spawnCream(){
+    const key = nextCreamKey || randomShapeKey();
+    nextCreamKey = randomShapeKey();
+    refreshNextPreviews();
+    spawnCreamFromKey(key);
+  }
+
+  function spawnTeal(){
+    const key = nextTealKey || randomShapeKey();
+    nextTealKey = randomShapeKey();
+    refreshNextPreviews();
+    spawnTealFromKey(key);
+  }
+
+  function holdPiece(color){
+    if (over) return;
+    const isCream = color==='cream';
+    const current = isCream ? creamPiece : tealPiece;
+    if (!current) return;
+    const currentHold = isCream ? holdCreamKey : holdTealKey;
+    const currentKey = current.key;
+    if (currentHold===null){
+      if (isCream){ holdCreamKey = currentKey; } else { holdTealKey = currentKey; }
+      const nextKey = isCream ? (nextCreamKey || randomShapeKey()) : (nextTealKey || randomShapeKey());
+      if (isCream){ nextCreamKey = randomShapeKey(); } else { nextTealKey = randomShapeKey(); }
+      refreshNextPreviews();
+      if (isCream){ spawnCreamFromKey(nextKey); } else { spawnTealFromKey(nextKey); }
+    } else {
+      if (isCream){ holdCreamKey = currentKey; spawnCreamFromKey(currentHold); }
+      else { holdTealKey = currentKey; spawnTealFromKey(currentHold); }
+    }
+    refreshHoldPreviews();
+    render();
+  }
+
+  function endGame(title, reason){
+    over = true; running = false;
+    clearInterval(timer);
+    clearInterval(lockTimerInterval);
+    goTitle.textContent = title;
+    goReason.textContent = reason;
+    goScore.textContent = '分數：' + score;
+    gameOverOverlay.classList.add('show');
+  }
+
+  function checkTSpin(piece, color){
+    if (piece.key!=='T') return false;
+    const corners = [[0,0],[0,2],[2,0],[2,2]];
+    let blocked = 0;
+    for (const [lr,lc] of corners){
+      const br = piece.row+lr, bc = piece.col+lc;
+      if (br<0||br>=ROWS||bc<0||bc>=COLS){ blocked++; continue; }
+      const cell = board[br][bc];
+      if (cell && cell.color===color) blocked++;
+    }
+    return blocked>=3;
+  }
+
+  function handleLock(color){
+    const piece = color==='cream' ? creamPiece : tealPiece;
+    const isTSpin = checkTSpin(piece, color) && piece.lastActionRotate;
+    for (let r=0;r<piece.matrix.length;r++){
+      for (let c=0;c<piece.matrix.length;c++){
+        if (!piece.matrix[r][c]) continue;
+        board[piece.row+r][piece.col+c] = {color};
+        touchedRows.add(piece.row+r);
+      }
+    }
+
+    let newlyScoredRows = [];
+    for (let r=0;r<ROWS;r++){
+      if (!touchedRows.has(r)) continue;
+      if (board[r].every(cell=>cell && cell.color===color)){
+        const key = r+':'+color;
+        if (!scoredPairs.has(key)){
+          scoredPairs.add(key);
+          newlyScoredRows.push(r);
+        }
+      }
+    }
+    const cleared = newlyScoredRows.length;
+
+    let pts = 0;
+    if (isTSpin){
+      const table = {0:100, 1:800, 2:1200, 3:1600};
+      pts = table[cleared] !== undefined ? table[cleared] : 400+cleared*400;
+      showMessage(cleared>0 ? ('T-Spin +'+cleared+'行!') : 'T-Spin!');
+    } else if (cleared>0){
+      const table = {1:100, 2:300, 3:500, 4:800};
+      pts = table[cleared] !== undefined ? table[cleared] : cleared*200;
+      showMessage('+'+cleared+'行完成！');
+    }
+    score += pts;
+    updateStatsDisplay();
+
+    if (cleared>0){
+      totalLines += cleared;
+      const newLevel = Math.floor(totalLines/10);
+      if (newLevel !== level){
+        level = newLevel;
+        startLoop();
+      }
+      updateStatsDisplay();
+      triggerFlash(newlyScoredRows);
+      let targetSplitRow;
+      if (color==='cream'){ targetSplitRow = Math.min(...newlyScoredRows); }
+      else { targetSplitRow = Math.max(...newlyScoredRows)+1; }
+      const topPct = (targetSplitRow/ROWS)*100;
+      animateBackgroundTo(topPct, 100-topPct);
+    }
+
+    const creamCount = countColor('cream'), tealCount = countColor('teal');
+    if (creamCount===0){ return endGame('失去平衡', '米色陣營被完全清空了'); }
+    if (tealCount===0){ return endGame('失去平衡', '深藍綠陣營被完全清空了'); }
+
+    if (color==='cream'){ spawnCream(); } else { spawnTeal(); }
+  }
+
+  const LOCK_DELAY_MS = 600;
+
+  function stepOrGround(color){
+    const p = color==='cream' ? creamPiece : tealPiece;
+    const delta = color==='cream' ? 1 : -1;
+    if (isValid(color, p.matrix, p.row+delta, p.col)){
+      p.row += delta;
+      p.lockDeadline = null;
+      return true;
+    } else {
+      if (p.lockDeadline===null) p.lockDeadline = performance.now()+LOCK_DELAY_MS;
+      return false;
+    }
+  }
+
+  function checkLockTimers(){
+    if (over) return;
+    const now = performance.now();
+    if (creamPiece && creamPiece.lockDeadline!==null && now>=creamPiece.lockDeadline){ handleLock('cream'); }
+    if (!over && tealPiece && tealPiece.lockDeadline!==null && now>=tealPiece.lockDeadline){ handleLock('teal'); }
+    if (!over) render();
+  }
+
+  function gravityTick(){
+    if (over) return;
+    stepOrGround('cream');
+    if (!over) stepOrGround('teal');
+    render();
+  }
+
+  function accelerate(color){
+    if (over) return;
+    const moved = stepOrGround(color);
+    if (!moved){ handleLock(color); }
+    render();
+  }
+
+  function hardDrop(color){
+    if (over) return;
+    const p = color==='cream' ? creamPiece : tealPiece;
+    const delta = color==='cream' ? 1 : -1;
+    while (isValid(color, p.matrix, p.row+delta, p.col)){ p.row += delta; }
+    p.lastActionRotate = false;
+    p.lockDeadline = null;
+    handleLock(color);
+    render();
+  }
+
+  function moveBoth(delta){
+    if (over) return;
+    [['cream',creamPiece], ['teal',tealPiece]].forEach(([color,p])=>{
+      if (isValid(color, p.matrix, p.row, p.col+delta)){
+        p.col += delta;
+        p.lastActionRotate = false;
+        if (p.lockDeadline!==null) p.lockDeadline = performance.now()+LOCK_DELAY_MS;
+      }
+    });
+    render();
+  }
+
+  function rotateBoth(dir){
+    if (over) return;
+    const rotateFn = dir==='cw' ? rotateCW : rotateCCW;
+    [['cream',creamPiece], ['teal',tealPiece]].forEach(([color,p])=>{
+      const rotated = rotateFn(p.matrix);
+      const kicks = [0,-1,1,-2,2];
+      for (const k of kicks){
+        if (isValid(color, rotated, p.row, p.col+k)){
+          p.matrix = rotated;
+          p.col += k;
+          p.lastActionRotate = true;
+          if (p.lockDeadline!==null) p.lockDeadline = performance.now()+LOCK_DELAY_MS;
+          break;
+        }
+      }
+    });
+    render();
+  }
+
+  function triggerFlash(rows){
+    flashRowsSet = new Set(rows);
+    let toggles = 0;
+    flashOn = true;
+    clearInterval(flashTimer);
+    render();
+    flashTimer = setInterval(()=>{
+      flashOn = !flashOn;
+      toggles++;
+      render();
+      if (toggles>=4){
+        clearInterval(flashTimer);
+        flashRowsSet = new Set();
+        render();
+      }
+    }, 140);
+  }
+
+  function drawSettledCell(c, r, color){
+    ctx.fillStyle = FILL[color];
+    ctx.fillRect(c*CELL, r*CELL, CELL, CELL);
+  }
+
+  function drawActiveCell(c, r, color){
+    const x=c*CELL, y=r*CELL;
+    ctx.fillStyle = FILL[color];
+    ctx.fillRect(x+1, y+1, CELL-2, CELL-2);
+    ctx.strokeStyle = BORDER[color];
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x+1.5, y+1.5, CELL-3, CELL-3);
+  }
+
+  function drawPiece(piece, color){
+    for (let r=0;r<piece.matrix.length;r++){
+      for (let c=0;c<piece.matrix.length;c++){
+        if (!piece.matrix[r][c]) continue;
+        const br=piece.row+r, bc=piece.col+c;
+        if (br<0||br>=ROWS) continue;
+        drawActiveCell(bc,br,color);
+      }
+    }
+  }
+
+  function render(){
+    ctx.clearRect(0,0,boardCanvas.width, boardCanvas.height);
+    for (let r=0;r<ROWS;r++){
+      for (let c=0;c<COLS;c++){
+        const cell = board[r][c];
+        if (cell) drawSettledCell(c,r,cell.color);
+      }
+    }
+    if (flashRowsSet.size>0){
+      ctx.fillStyle = flashOn ? '#ffffff' : '#0d332e';
+      flashRowsSet.forEach(r=>{ ctx.fillRect(0, r*CELL, COLS*CELL, CELL); });
+    }
+    if (creamPiece) drawPiece(creamPiece, 'cream');
+    if (tealPiece) drawPiece(tealPiece, 'teal');
+  }
+
+  function pad(n, len){ return String(n).padStart(len, '0'); }
+
+  function updateStatsDisplay(){
+    lineText.textContent = pad(totalLines, 2);
+    levelText.textContent = pad(level, 2);
+    scoreText.textContent = pad(score, 4);
+  }
+
+  function startLoop(){
+    clearInterval(timer);
+    clearInterval(lockTimerInterval);
+    const interval = 750/(1+level*0.1);
+    timer = setInterval(()=>{ if (running && !over) gravityTick(); }, interval);
+    lockTimerInterval = setInterval(()=>{ if (running && !over) checkLockTimers(); }, 80);
+  }
+
+  function resetGame(){
+    over = false; running = true;
+    score = 0;
+    totalLines = 0; level = 0;
+    updateStatsDisplay();
+    nextCreamKey = null; nextTealKey = null;
+    holdCreamKey = null; holdTealKey = null;
+    initBoard();
+    spawnCream();
+    spawnTeal();
+    refreshHoldPreviews();
+    bgTop = 50; bgBottom = 50;
+    applyBackground(bgTop, bgBottom);
+    render();
+    startLoop();
+  }
+
+  function addPress(el, fn){
+    let handledByTouch = false;
+    el.addEventListener('touchstart', function(e){ handledByTouch=true; e.preventDefault(); fn(); }, {passive:false});
+    el.addEventListener('mousedown', function(e){ if (handledByTouch){ handledByTouch=false; return; } e.preventDefault(); fn(); });
+    el.addEventListener('click', function(e){ if (handledByTouch){ handledByTouch=false; return; } fn(); });
+  }
+
+  const btnLeft = document.getElementById('btnLeft');
+  const btnRight = document.getElementById('btnRight');
+  const btnCream = document.getElementById('btnCream');
+  const btnTeal = document.getElementById('btnTeal');
+  const btnA = document.getElementById('btnA');
+  const btnB = document.getElementById('btnB');
+
+  function updateActionButtons(){
+    if (aHeld){
+      btnLeft.textContent = '↺';
+      btnRight.textContent = '↻';
+      btnCream.innerHTML = '<span class="dbltri">▽<span>▽</span></span>';
+      btnTeal.innerHTML = '<span class="dbltri">△<span>△</span></span>';
+    } else if (bHeld){
+      btnLeft.textContent = '◀';
+      btnRight.textContent = '▶';
+      btnCream.innerHTML = '<b>H</b>';
+      btnTeal.innerHTML = '<b>H</b>';
+    } else {
+      btnLeft.textContent = '◀';
+      btnRight.textContent = '▶';
+      btnCream.textContent = '▽';
+      btnTeal.textContent = '△';
+    }
+  }
+
+  function setAHeld(v){ aHeld=v; if(v) bHeld=false; btnA.classList.toggle('active', v); btnB.classList.toggle('active', bHeld); updateActionButtons(); }
+  function setBHeld(v){ bHeld=v; if(v) aHeld=false; btnB.classList.toggle('active', v); btnA.classList.toggle('active', aHeld); updateActionButtons(); }
+
+  [ [btnA, setAHeld], [btnB, setBHeld] ].forEach(([btn, setter])=>{
+    btn.addEventListener('touchstart', e=>{ e.preventDefault(); setter(true); }, {passive:false});
+    btn.addEventListener('touchend', e=>{ e.preventDefault(); setter(false); }, {passive:false});
+    btn.addEventListener('touchcancel', ()=>setter(false));
+    btn.addEventListener('mousedown', e=>{ e.preventDefault(); setter(true); });
+  });
+  window.addEventListener('mouseup', ()=>{ setAHeld(false); setBHeld(false); });
+  window.addEventListener('blur', ()=>{ setAHeld(false); setBHeld(false); });
+
+  addPress(btnLeft, ()=>{ if (aHeld) rotateBoth('ccw'); else moveBoth(-1); });
+  addPress(btnRight, ()=>{ if (aHeld) rotateBoth('cw'); else moveBoth(1); });
+  function bindAccelButton(el, color){
+    let repeatInterval = null;
+    let firstDelayTimeout = null;
+    function stop(){
+      clearTimeout(firstDelayTimeout); firstDelayTimeout = null;
+      clearInterval(repeatInterval); repeatInterval = null;
+    }
+    function start(){
+      stop();
+      if (aHeld){ hardDrop(color); return; }
+      if (bHeld){ holdPiece(color); return; }
+      accelerate(color);
+      firstDelayTimeout = setTimeout(()=>{
+        repeatInterval = setInterval(()=>{
+          if (aHeld || bHeld){ stop(); return; }
+          accelerate(color);
+        }, 70);
+      }, 250);
+    }
+    el.addEventListener('touchstart', e=>{ e.preventDefault(); start(); }, {passive:false});
+    el.addEventListener('touchend', e=>{ e.preventDefault(); stop(); }, {passive:false});
+    el.addEventListener('touchcancel', ()=>stop());
+    el.addEventListener('mousedown', e=>{ e.preventDefault(); start(); });
+    window.addEventListener('mouseup', ()=>stop());
+  }
+  bindAccelButton(btnCream, 'cream');
+  bindAccelButton(btnTeal, 'teal');
+  addPress(document.getElementById('startBtn'), ()=>{ startOverlay.classList.remove('show'); resetGame(); });
+  addPress(document.getElementById('restartBtn'), ()=>{ gameOverOverlay.classList.remove('show'); resetGame(); });
+
+  const restartConfirmOverlay = document.getElementById('restartConfirmOverlay');
+  addPress(document.getElementById('restartTopBtn'), ()=>{
+    if (startOverlay.classList.contains('show')) return;
+    restartConfirmOverlay.classList.add('show');
+  });
+  addPress(document.getElementById('confirmRestartYes'), ()=>{
+    restartConfirmOverlay.classList.remove('show');
+    gameOverOverlay.classList.remove('show');
+    resetGame();
+  });
+  addPress(document.getElementById('confirmRestartNo'), ()=>{
+    restartConfirmOverlay.classList.remove('show');
+  });
+  addPress(document.getElementById('optionBtn'), ()=>{
+    showMessage('Option 尚未開放');
+  });
+
+  window.addEventListener('keydown', (e)=>{
+    if (!creamPiece || !tealPiece) return;
+    switch(e.key){
+      case 'ArrowLeft': aHeld ? rotateBoth('ccw') : moveBoth(-1); break;
+      case 'ArrowRight': aHeld ? rotateBoth('cw') : moveBoth(1); break;
+      case 'ArrowUp': aHeld ? hardDrop('cream') : (bHeld ? holdPiece('cream') : accelerate('cream')); break;
+      case 'ArrowDown': aHeld ? hardDrop('teal') : (bHeld ? holdPiece('teal') : accelerate('teal')); break;
+      case 'a': case 'A': setAHeld(true); break;
+      case 'b': case 'B': setBHeld(true); break;
+    }
+  });
+  window.addEventListener('keyup', (e)=>{
+    if (e.key==='a' || e.key==='A') setAHeld(false);
+    if (e.key==='b' || e.key==='B') setBHeld(false);
+  });
+
+  updateActionButtons();
+  initBoard();
+  applyBackground(bgTop, bgBottom);
+  render();
+})();
+</script>
+</body>
+</html>
