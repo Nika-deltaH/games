@@ -84,6 +84,9 @@
     justify-content: space-between;
   }
   .preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .side-cluster { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .side-btn { width: 42px; height: 42px; font-size: 15px; cursor: pointer; }
+  #holdCreamBox, #holdTealBox { cursor: pointer; }
   .preview-label {
     font-size: 10px;
     letter-spacing: 1px;
@@ -141,11 +144,16 @@
     width: 100%;
     max-width: 400px;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
+    gap: 8px;
     margin-top: 16px;
     padding: 0 2px;
-    gap: 4px;
+  }
+  .control-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
   }
   .btn {
     -webkit-user-select: none;
@@ -155,12 +163,12 @@
     justify-content: center;
     flex-direction: column;
     flex: 0 0 auto;
-    width: 46px; height: 46px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     border: 1px solid #33413c;
     background: linear-gradient(180deg, #202b29, #161e1c);
     color: #cfd6d2;
-    font-size: 17px;
+    font-size: 16px;
     cursor: pointer;
     box-shadow: 0 3px 0 #0b1211, 0 4px 8px rgba(0,0,0,0.3);
     touch-action: manipulation;
@@ -171,10 +179,8 @@
   }
   .btn-cream { background: linear-gradient(180deg, #f3ecd9, #ddd3b8); color: #1f6058; border-color: #c9bf9e; }
   .btn-teal { background: linear-gradient(180deg, #24756a, #163f3a); color: #f3ecd9; border-color: #2f5a51; }
-  .btn-mod { color: #e8b96b; font-weight: 700; border-color: #e8b96b; font-size: 18px; }
-  .btn-mod.active { background: linear-gradient(180deg, #e8b96b, #b8863f); color: #14201f; }
-  .btn-sub { font-size: 7px; margin-top: 1px; opacity: 0.8; }
-  .dbltri { display:flex; flex-direction:column; align-items:center; line-height:0.55; font-size: 15px; }
+  .btn-label { font-size: 8px; margin-top: 1px; opacity: 0.85; font-weight: 600; }
+  .dbltri { display:flex; flex-direction:column; align-items:center; line-height:0.55; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -190,9 +196,13 @@
 
   <div class="game-row">
     <div class="side-col">
-      <div class="preview-wrap">
-        <div class="preview-label">HOLD</div>
-        <div class="hold-box" id="holdCreamBox"><canvas id="holdCreamCanvas" width="50" height="50"></canvas></div>
+      <div class="side-cluster">
+        <div class="preview-wrap">
+          <div class="preview-label">HOLD</div>
+          <div class="hold-box" id="holdCreamBox"><canvas id="holdCreamCanvas" width="50" height="50"></canvas></div>
+        </div>
+        <div class="btn btn-cream side-btn" id="btnCreamSoft">▽</div>
+        <div class="btn btn-cream side-btn" id="btnCreamHard"><span class="dbltri">▽<span>▽</span></span></div>
       </div>
       <div class="preview-wrap">
         <div class="preview-label">NEXT</div>
@@ -203,10 +213,10 @@
       <canvas id="boardCanvas" width="200" height="560"></canvas>
       <div class="overlay show" id="startOverlay">
         <h2>DEKOBOKO</h2>
-        <p>◀▶：左右移動</p>
-        <p>▽△：加速落下</p>
-        <p>按住 A：◀▶變 ⟲ ⟳，▽△變直接落下</p>
-        <p>按住 B：Hold住白/綠方塊</p>
+        <p>◀▶：左右移動　　⟲⟳：旋轉</p>
+        <p>▽／△：米色／深藍綠軟降</p>
+        <p>▽▽／△△：米色／深藍綠硬降</p>
+        <p>點 HOLD 框：存放米色／深藍綠方塊</p>
         <button id="startBtn">開始遊戲</button>
       </div>
       <div class="overlay" id="gameOverOverlay">
@@ -229,20 +239,24 @@
         <div class="preview-label">NEXT</div>
         <div class="next-box" id="nextCreamBox"><canvas id="nextCreamCanvas" width="63" height="63"></canvas></div>
       </div>
-      <div class="preview-wrap">
-        <div class="preview-label">HOLD</div>
-        <div class="hold-box" id="holdTealBox"><canvas id="holdTealCanvas" width="50" height="50"></canvas></div>
+      <div class="side-cluster">
+        <div class="btn btn-teal side-btn" id="btnTealSoft">△</div>
+        <div class="btn btn-teal side-btn" id="btnTealHard"><span class="dbltri">△<span>△</span></span></div>
+        <div class="preview-wrap">
+          <div class="preview-label">HOLD</div>
+          <div class="hold-box" id="holdTealBox"><canvas id="holdTealCanvas" width="50" height="50"></canvas></div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="controls">
-    <div class="btn btn-mod" id="btnA">A</div>
-    <div class="btn btn-mod" id="btnB">B</div>
-    <div class="btn" id="btnLeft">◀</div>
-    <div class="btn" id="btnRight">▶</div>
-    <div class="btn btn-cream" id="btnCream">▽</div>
-    <div class="btn btn-teal" id="btnTeal">△</div>
+    <div class="control-row">
+      <div class="btn" id="btnLeft">◀</div>
+      <div class="btn" id="btnRight">▶</div>
+      <div class="btn" id="btnRotCCW">⟲</div>
+      <div class="btn" id="btnRotCW">⟳</div>
+    </div>
   </div>
 </div>
 
@@ -287,7 +301,6 @@
   let bgTop = 50, bgBottom = 50;
   let nextCreamKey = null, nextTealKey = null;
   let holdCreamKey = null, holdTealKey = null;
-  let aHeld = false, bHeld = false;
 
   function emptyRow(){ return Array(COLS).fill(null); }
 
@@ -725,46 +738,13 @@
     el.addEventListener('click', function(e){ if (handledByTouch){ handledByTouch=false; return; } fn(); });
   }
 
-  const btnLeft = document.getElementById('btnLeft');
-  const btnRight = document.getElementById('btnRight');
-  const btnCream = document.getElementById('btnCream');
-  const btnTeal = document.getElementById('btnTeal');
-  const btnA = document.getElementById('btnA');
-  const btnB = document.getElementById('btnB');
-
-  function updateActionButtons(){
-    if (aHeld){
-      btnLeft.textContent = '↺';
-      btnRight.textContent = '↻';
-      btnCream.innerHTML = '<span class="dbltri">▽<span>▽</span></span>';
-      btnTeal.innerHTML = '<span class="dbltri">△<span>△</span></span>';
-    } else if (bHeld){
-      btnLeft.textContent = '◀';
-      btnRight.textContent = '▶';
-      btnCream.innerHTML = '<b>H</b>';
-      btnTeal.innerHTML = '<b>H</b>';
-    } else {
-      btnLeft.textContent = '◀';
-      btnRight.textContent = '▶';
-      btnCream.textContent = '▽';
-      btnTeal.textContent = '△';
-    }
+  function addPress(el, fn){
+    let handledByTouch = false;
+    el.addEventListener('touchstart', function(e){ handledByTouch=true; e.preventDefault(); fn(); }, {passive:false});
+    el.addEventListener('mousedown', function(e){ if (handledByTouch){ handledByTouch=false; return; } e.preventDefault(); fn(); });
+    el.addEventListener('click', function(e){ if (handledByTouch){ handledByTouch=false; return; } fn(); });
   }
 
-  function setAHeld(v){ aHeld=v; if(v) bHeld=false; btnA.classList.toggle('active', v); btnB.classList.toggle('active', bHeld); updateActionButtons(); }
-  function setBHeld(v){ bHeld=v; if(v) aHeld=false; btnB.classList.toggle('active', v); btnA.classList.toggle('active', aHeld); updateActionButtons(); }
-
-  [ [btnA, setAHeld], [btnB, setBHeld] ].forEach(([btn, setter])=>{
-    btn.addEventListener('touchstart', e=>{ e.preventDefault(); setter(true); }, {passive:false});
-    btn.addEventListener('touchend', e=>{ e.preventDefault(); setter(false); }, {passive:false});
-    btn.addEventListener('touchcancel', ()=>setter(false));
-    btn.addEventListener('mousedown', e=>{ e.preventDefault(); setter(true); });
-  });
-  window.addEventListener('mouseup', ()=>{ setAHeld(false); setBHeld(false); });
-  window.addEventListener('blur', ()=>{ setAHeld(false); setBHeld(false); });
-
-  addPress(btnLeft, ()=>{ if (aHeld) rotateBoth('ccw'); else moveBoth(-1); });
-  addPress(btnRight, ()=>{ if (aHeld) rotateBoth('cw'); else moveBoth(1); });
   function bindAccelButton(el, color){
     let repeatInterval = null;
     let firstDelayTimeout = null;
@@ -774,14 +754,9 @@
     }
     function start(){
       stop();
-      if (aHeld){ hardDrop(color); return; }
-      if (bHeld){ holdPiece(color); return; }
       accelerate(color);
       firstDelayTimeout = setTimeout(()=>{
-        repeatInterval = setInterval(()=>{
-          if (aHeld || bHeld){ stop(); return; }
-          accelerate(color);
-        }, 70);
+        repeatInterval = setInterval(()=>{ accelerate(color); }, 70);
       }, 250);
     }
     el.addEventListener('touchstart', e=>{ e.preventDefault(); start(); }, {passive:false});
@@ -790,8 +765,17 @@
     el.addEventListener('mousedown', e=>{ e.preventDefault(); start(); });
     window.addEventListener('mouseup', ()=>stop());
   }
-  bindAccelButton(btnCream, 'cream');
-  bindAccelButton(btnTeal, 'teal');
+
+  addPress(document.getElementById('btnLeft'), ()=>moveBoth(-1));
+  addPress(document.getElementById('btnRight'), ()=>moveBoth(1));
+  addPress(document.getElementById('btnRotCCW'), ()=>rotateBoth('ccw'));
+  addPress(document.getElementById('btnRotCW'), ()=>rotateBoth('cw'));
+  bindAccelButton(document.getElementById('btnCreamSoft'), 'cream');
+  bindAccelButton(document.getElementById('btnTealSoft'), 'teal');
+  addPress(document.getElementById('btnCreamHard'), ()=>hardDrop('cream'));
+  addPress(document.getElementById('btnTealHard'), ()=>hardDrop('teal'));
+  addPress(document.getElementById('holdCreamBox'), ()=>holdPiece('cream'));
+  addPress(document.getElementById('holdTealBox'), ()=>holdPiece('teal'));
   addPress(document.getElementById('startBtn'), ()=>{ startOverlay.classList.remove('show'); resetGame(); });
   addPress(document.getElementById('restartBtn'), ()=>{ gameOverOverlay.classList.remove('show'); resetGame(); });
 
@@ -815,20 +799,19 @@
   window.addEventListener('keydown', (e)=>{
     if (!creamPiece || !tealPiece) return;
     switch(e.key){
-      case 'ArrowLeft': aHeld ? rotateBoth('ccw') : moveBoth(-1); break;
-      case 'ArrowRight': aHeld ? rotateBoth('cw') : moveBoth(1); break;
-      case 'ArrowUp': aHeld ? hardDrop('cream') : (bHeld ? holdPiece('cream') : accelerate('cream')); break;
-      case 'ArrowDown': aHeld ? hardDrop('teal') : (bHeld ? holdPiece('teal') : accelerate('teal')); break;
-      case 'a': case 'A': setAHeld(true); break;
-      case 'b': case 'B': setBHeld(true); break;
+      case 'ArrowLeft': moveBoth(-1); break;
+      case 'ArrowRight': moveBoth(1); break;
+      case 'z': case 'Z': rotateBoth('ccw'); break;
+      case 'x': case 'X': rotateBoth('cw'); break;
+      case 'ArrowUp': accelerate('cream'); break;
+      case 'ArrowDown': accelerate('teal'); break;
+      case 'w': case 'W': hardDrop('cream'); break;
+      case 's': case 'S': hardDrop('teal'); break;
+      case 'c': case 'C': holdPiece('cream'); break;
+      case 'v': case 'V': holdPiece('teal'); break;
     }
   });
-  window.addEventListener('keyup', (e)=>{
-    if (e.key==='a' || e.key==='A') setAHeld(false);
-    if (e.key==='b' || e.key==='B') setBHeld(false);
-  });
 
-  updateActionButtons();
   initBoard();
   applyBackground(bgTop, bgBottom);
   render();
