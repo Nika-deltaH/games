@@ -150,6 +150,28 @@
     font-weight: 600;
     cursor: pointer;
   }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 220px;
+    margin-top: 14px;
+    font-size: 14px;
+    color: #cfd6d2;
+  }
+  .toggle { position: relative; display: inline-block; width: 42px; height: 24px; flex: 0 0 auto; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; cursor: pointer; top:0; left:0; right:0; bottom:0;
+    background: #33413c; transition: .2s; border-radius: 24px;
+  }
+  .toggle-slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background: #cfd6d2; transition: .2s; border-radius: 50%;
+  }
+  .toggle input:checked + .toggle-slider { background: #1f6058; }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(18px); background: #f3ecd9; }
 
   .controls {
     width: 100%;
@@ -248,6 +270,17 @@
           <button id="confirmRestartNo">取消</button>
         </div>
       </div>
+      <div class="overlay" id="settingsOverlay">
+        <h2>設定</h2>
+        <div class="setting-row">
+          <span>預覽落下位置</span>
+          <label class="toggle">
+            <input type="checkbox" id="toggleGhost" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <button id="closeSettingsBtn">關閉</button>
+      </div>
     </div>
     <div class="side-col">
       <div class="preview-wrap align-right">
@@ -323,6 +356,7 @@
   let flashRowsSet = new Set(), flashOn = false, flashTimer = null;
   let bgTop = 50, bgBottom = 50;
   let creamQueue = [], tealQueue = [];
+  let showGhost = true;
   let holdCreamKey = null, holdTealKey = null;
 
   function emptyRow(){ return Array(COLS).fill(null); }
@@ -492,7 +526,7 @@
   }
 
   function holdPiece(color){
-    if (over) return;
+    if (over || !running) return;
     const isCream = color==='cream';
     const current = isCream ? creamPiece : tealPiece;
     if (!current) return;
@@ -628,14 +662,14 @@
   }
 
   function accelerate(color){
-    if (over) return;
+    if (over || !running) return;
     const moved = stepOrGround(color);
     if (!moved){ handleLock(color); }
     render();
   }
 
   function hardDrop(color){
-    if (over) return;
+    if (over || !running) return;
     const p = color==='cream' ? creamPiece : tealPiece;
     const delta = color==='cream' ? 1 : -1;
     while (isValid(color, p.matrix, p.row+delta, p.col)){ p.row += delta; }
@@ -646,7 +680,7 @@
   }
 
   function moveBoth(delta){
-    if (over) return;
+    if (over || !running) return;
     [['cream',creamPiece], ['teal',tealPiece]].forEach(([color,p])=>{
       if (isValid(color, p.matrix, p.row, p.col+delta)){
         p.col += delta;
@@ -658,7 +692,7 @@
   }
 
   function rotateBoth(dir){
-    if (over) return;
+    if (over || !running) return;
     const rotateFn = dir==='cw' ? rotateCW : rotateCCW;
     [['cream',creamPiece], ['teal',tealPiece]].forEach(([color,p])=>{
       const rotated = rotateFn(p.matrix);
@@ -719,6 +753,43 @@
     }
   }
 
+  function ghostRow(piece, color){
+    const delta = color==='cream' ? 1 : -1;
+    let r = piece.row;
+    while (isValid(color, piece.matrix, r+delta, piece.col)){ r += delta; }
+    return r;
+  }
+
+  function drawGhostCell(c, r, color){
+    const x=c*CELL, y=r*CELL;
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = FILL[color];
+    ctx.fillRect(x+1, y+1, CELL-2, CELL-2);
+    ctx.restore();
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.setLineDash([3,2]);
+    ctx.strokeStyle = FILL[color];
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x+1.5, y+1.5, CELL-3, CELL-3);
+    ctx.restore();
+  }
+
+  function drawGhost(piece, color){
+    if (!showGhost || !piece) return;
+    const gr = ghostRow(piece, color);
+    if (gr === piece.row) return;
+    for (let r=0;r<piece.matrix.length;r++){
+      for (let c=0;c<piece.matrix.length;c++){
+        if (!piece.matrix[r][c]) continue;
+        const br = gr+r, bc = piece.col+c;
+        if (br<0||br>=ROWS) continue;
+        drawGhostCell(bc,br,color);
+      }
+    }
+  }
+
   function render(){
     ctx.clearRect(0,0,boardCanvas.width, boardCanvas.height);
     for (let r=0;r<ROWS;r++){
@@ -731,6 +802,8 @@
       ctx.fillStyle = flashOn ? '#ffffff' : '#0d332e';
       flashRowsSet.forEach(r=>{ ctx.fillRect(0, r*CELL, COLS*CELL, CELL); });
     }
+    if (creamPiece) drawGhost(creamPiece, 'cream');
+    if (tealPiece) drawGhost(tealPiece, 'teal');
     if (creamPiece) drawPiece(creamPiece, 'cream');
     if (tealPiece) drawPiece(tealPiece, 'teal');
   }
@@ -829,8 +902,19 @@
   addPress(document.getElementById('confirmRestartNo'), ()=>{
     restartConfirmOverlay.classList.remove('show');
   });
+  const settingsOverlay = document.getElementById('settingsOverlay');
   addPress(document.getElementById('optionBtn'), ()=>{
-    showMessage('Option 尚未開放');
+    if (startOverlay.classList.contains('show')) return;
+    if (!over) running = false;
+    settingsOverlay.classList.add('show');
+  });
+  addPress(document.getElementById('closeSettingsBtn'), ()=>{
+    settingsOverlay.classList.remove('show');
+    if (!over) running = true;
+  });
+  document.getElementById('toggleGhost').addEventListener('change', (e)=>{
+    showGhost = e.target.checked;
+    render();
   });
 
   window.addEventListener('keydown', (e)=>{
