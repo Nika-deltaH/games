@@ -84,8 +84,19 @@
     justify-content: space-between;
   }
   .preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .preview-wrap.align-right { align-items: flex-end; }
+  .preview-wrap.align-left { align-items: flex-start; }
   .side-cluster { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .side-btn { width: 42px; height: 42px; font-size: 15px; cursor: pointer; }
+  .mini-queue { display: flex; flex-direction: column; gap: 5px; }
+  .mini-box {
+    width: 40px; height: 40px;
+    border-radius: 5px;
+    border: 1px solid #33413c;
+  }
+  .mini-box canvas { display:block; width:100%; height:100%; }
+  #nextCream2Box, #nextCream3Box { background: #1f6058; }
+  #nextTeal2Box, #nextTeal3Box { background: #f3ecd9; }
+  .side-btn { width: 56px; height: 56px; font-size: 20px; cursor: pointer; }
   #holdCreamBox, #holdTealBox { cursor: pointer; }
   .preview-label {
     font-size: 10px;
@@ -163,12 +174,12 @@
     justify-content: center;
     flex-direction: column;
     flex: 0 0 auto;
-    width: 44px; height: 44px;
+    width: 58px; height: 58px;
     border-radius: 50%;
     border: 1px solid #33413c;
     background: linear-gradient(180deg, #202b29, #161e1c);
     color: #cfd6d2;
-    font-size: 16px;
+    font-size: 22px;
     cursor: pointer;
     box-shadow: 0 3px 0 #0b1211, 0 4px 8px rgba(0,0,0,0.3);
     touch-action: manipulation;
@@ -204,8 +215,12 @@
         <div class="btn btn-cream side-btn" id="btnCreamSoft">▽</div>
         <div class="btn btn-cream side-btn" id="btnCreamHard"><span class="dbltri">▽<span>▽</span></span></div>
       </div>
-      <div class="preview-wrap">
+      <div class="preview-wrap align-left">
         <div class="preview-label">NEXT</div>
+        <div class="mini-queue">
+          <div class="mini-box" id="nextTeal3Box"><canvas id="nextTeal3Canvas" width="40" height="40"></canvas></div>
+          <div class="mini-box" id="nextTeal2Box"><canvas id="nextTeal2Canvas" width="40" height="40"></canvas></div>
+        </div>
         <div class="next-box" id="nextTealBox"><canvas id="nextTealCanvas" width="63" height="63"></canvas></div>
       </div>
     </div>
@@ -235,9 +250,13 @@
       </div>
     </div>
     <div class="side-col">
-      <div class="preview-wrap">
+      <div class="preview-wrap align-right">
         <div class="preview-label">NEXT</div>
         <div class="next-box" id="nextCreamBox"><canvas id="nextCreamCanvas" width="63" height="63"></canvas></div>
+        <div class="mini-queue">
+          <div class="mini-box" id="nextCream2Box"><canvas id="nextCream2Canvas" width="40" height="40"></canvas></div>
+          <div class="mini-box" id="nextCream3Box"><canvas id="nextCream3Canvas" width="40" height="40"></canvas></div>
+        </div>
       </div>
       <div class="side-cluster">
         <div class="btn btn-teal side-btn" id="btnTealSoft">△</div>
@@ -283,6 +302,10 @@
   const ctx = boardCanvas.getContext('2d');
   const nextCreamCtx = document.getElementById('nextCreamCanvas').getContext('2d');
   const nextTealCtx = document.getElementById('nextTealCanvas').getContext('2d');
+  const nextCream2Ctx = document.getElementById('nextCream2Canvas').getContext('2d');
+  const nextCream3Ctx = document.getElementById('nextCream3Canvas').getContext('2d');
+  const nextTeal2Ctx = document.getElementById('nextTeal2Canvas').getContext('2d');
+  const nextTeal3Ctx = document.getElementById('nextTeal3Canvas').getContext('2d');
   const holdCreamCtx = document.getElementById('holdCreamCanvas').getContext('2d');
   const holdTealCtx = document.getElementById('holdTealCanvas').getContext('2d');
   const scoreText = document.getElementById('scoreText');
@@ -299,7 +322,7 @@
   let totalLines = 0, level = 0;
   let flashRowsSet = new Set(), flashOn = false, flashTimer = null;
   let bgTop = 50, bgBottom = 50;
-  let nextCreamKey = null, nextTealKey = null;
+  let creamQueue = [], tealQueue = [];
   let holdCreamKey = null, holdTealKey = null;
 
   function emptyRow(){ return Array(COLS).fill(null); }
@@ -404,9 +427,19 @@
     }
   }
 
+  function refillQueue(queue){
+    while (queue.length < 3) queue.push(randomShapeKey());
+  }
+
   function refreshNextPreviews(){
-    drawPreviewBox(nextCreamCtx, 63, nextCreamKey, '#f3ecd9', '#c9bf9e');
-    drawPreviewBox(nextTealCtx, 63, nextTealKey, '#1f6058', '#123a35');
+    refillQueue(creamQueue);
+    refillQueue(tealQueue);
+    drawPreviewBox(nextCreamCtx, 63, creamQueue[0], '#f3ecd9', '#c9bf9e');
+    drawPreviewBox(nextTealCtx, 63, tealQueue[0], '#1f6058', '#123a35');
+    drawPreviewBox(nextCream2Ctx, 40, creamQueue[1], '#f3ecd9', '#c9bf9e');
+    drawPreviewBox(nextCream3Ctx, 40, creamQueue[2], '#f3ecd9', '#c9bf9e');
+    drawPreviewBox(nextTeal2Ctx, 40, tealQueue[1], '#1f6058', '#123a35');
+    drawPreviewBox(nextTeal3Ctx, 40, tealQueue[2], '#1f6058', '#123a35');
   }
 
   function refreshHoldPreviews(){
@@ -443,15 +476,17 @@
   }
 
   function spawnCream(){
-    const key = nextCreamKey || randomShapeKey();
-    nextCreamKey = randomShapeKey();
+    refillQueue(creamQueue);
+    const key = creamQueue.shift();
+    refillQueue(creamQueue);
     refreshNextPreviews();
     spawnCreamFromKey(key);
   }
 
   function spawnTeal(){
-    const key = nextTealKey || randomShapeKey();
-    nextTealKey = randomShapeKey();
+    refillQueue(tealQueue);
+    const key = tealQueue.shift();
+    refillQueue(tealQueue);
     refreshNextPreviews();
     spawnTealFromKey(key);
   }
@@ -465,8 +500,10 @@
     const currentKey = current.key;
     if (currentHold===null){
       if (isCream){ holdCreamKey = currentKey; } else { holdTealKey = currentKey; }
-      const nextKey = isCream ? (nextCreamKey || randomShapeKey()) : (nextTealKey || randomShapeKey());
-      if (isCream){ nextCreamKey = randomShapeKey(); } else { nextTealKey = randomShapeKey(); }
+      const queue = isCream ? creamQueue : tealQueue;
+      refillQueue(queue);
+      const nextKey = queue.shift();
+      refillQueue(queue);
       refreshNextPreviews();
       if (isCream){ spawnCreamFromKey(nextKey); } else { spawnTealFromKey(nextKey); }
     } else {
@@ -719,7 +756,7 @@
     score = 0;
     totalLines = 0; level = 0;
     updateStatsDisplay();
-    nextCreamKey = null; nextTealKey = null;
+    creamQueue = []; tealQueue = [];
     holdCreamKey = null; holdTealKey = null;
     initBoard();
     spawnCream();
