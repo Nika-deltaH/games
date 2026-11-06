@@ -464,6 +464,20 @@ details ul{margin:6px 0 0;padding-left:18px}
 .tools button[aria-pressed="true"]{background:var(--cyan);border-color:var(--cyan);color:#fff}
 .tools .go{background:var(--pink);color:#fff;border-color:var(--pink);font-weight:900}
 .tools .go:disabled{opacity:.4;cursor:default}
+/* 手機上這兩層不存在，內容照原本順序直排 */
+.gmain,.gside{display:contents}
+/* 電腦和橫放的平板：盤面在左、線索在右，不用上下捲動。
+   高度條件是為了排除橫放的手機；它們維持直排。
+   220px = 盤面上方的標題列 + 下方固定的工具列 + 留白 */
+@media (min-width:900px) and (min-height:600px){
+  #gameView{--bw:clamp(360px,100vh - 220px,min(56vw,720px));
+    display:grid;grid-template-columns:var(--bw) minmax(0,1fr);gap:24px;align-items:start;max-width:calc(var(--bw) + 664px)}
+  body.playing{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .gmain,.gside{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .gmain{position:sticky;top:12px}
+  .board{--fs:calc(var(--bw) / var(--n) * .52)}
+  #gameView .cards:not(.list){grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-weight:700;font-size:14px;z-index:40;max-width:90vw;text-align:center}
 </style>
 </head>
@@ -499,9 +513,12 @@ details ul{margin:6px 0 0;padding-left:18px}
 
 <!-- ===== 畫面二：現場（遊戲） ===== -->
 <div class="wrap" id="gameView" hidden>
+  <div class="gmain">
   <div class="topbar"><button class="back" id="backBtn" data-t="nav.back"></button><span class="logo-s">KOIDOKU</span></div>
   <div class="case"><h2 id="caseTitle"></h2><span class="right"><span class="t" id="timer">0:00</span><button id="optBtn" class="opt" data-ta="a.opt">⚙</button></span></div>
   <div class="board" id="board"></div>
+  </div>
+  <div class="gside">
   <p class="hint" id="hint"></p>
   <div class="coach" id="coach" hidden></div>
   <div class="cards" id="cards"></div>
@@ -509,6 +526,7 @@ details ul{margin:6px 0 0;padding-left:18px}
     <summary data-t="rules.title"></summary>
     <ul><li data-t="rules.1"></li><li data-t="rules.2"></li><li data-t="rules.3"></li><li data-t="rules.4"></li><li data-t="rules.5"></li><li data-t="rules.6"></li><li data-t="rules.7"></li><li data-t="rules.8"></li></ul>
   </details>
+  </div>
 </div>
 <div class="tools" id="tools" hidden><div class="in">
   <button id="xBtn" aria-pressed="false" data-t="tool.x"></button>
@@ -721,7 +739,7 @@ const NATIVE=(typeof window!=='undefined'&&window.KoidokuNative)||null;
    使用者改過的設定存在 localStorage 的 koidoku4-opt；讀不到就用預設值。
    dark:null、lang:null 都代表「跟隨系統」。另外 OPT.sort（檔案櫃排序）是用到時才寫進來，
    所以不在這份預設值裡。選項的中文標籤和說明在下面的 OPT_DEF。 */
-const OPT_DEFAULT={dark:null,sound:false,vol:100,music:true,mvol:80,lang:null,bgmute:true,anim:true,timer:true,portrait:true,autoX:false,xBlocked:false,gender:false,hl:true,flabel:true,unplacedFirst:false,token:'letter',clear:'stamp'};
+const OPT_DEFAULT={dark:null,sound:true,vol:100,music:true,mvol:80,lang:null,bgmute:true,anim:true,timer:true,portrait:true,autoX:false,xBlocked:false,gender:false,hl:true,flabel:true,unplacedFirst:false,token:'letter',clear:'stamp'};
 const OPT=Object.assign({},OPT_DEFAULT);
 try{Object.assign(OPT,JSON.parse(localStorage.getItem('koidoku4-opt')||'{}'))}catch(e){}
 const saveOpt=()=>{try{localStorage.setItem('koidoku4-opt',JSON.stringify(OPT))}catch(e){}};
@@ -1563,7 +1581,7 @@ function openCoverPreview(){
   $('#cvGrid').innerHTML=LAYOUTS.map((Lo,k)=>`<figure>${coverHTML(i,k)}<figcaption>${k+1}</figcaption></figure>`).join('');
   $('#cvModal').hidden=false;
 }
-document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m||e.target.closest('[data-close]')) m.hidden=true }));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m||e.target.closest('[data-close]')){ m.hidden=true; if(m.id==='optModal') tutOptClosed() } }));
 $('#optBtn0').innerHTML=GEAR_SVG; $('#optBtn').innerHTML=GEAR_SVG;
 $('#optBtn0').onclick=()=>openOpts(false);
 $('#optBtn').onclick=()=>openOpts(true);
@@ -1599,7 +1617,7 @@ const TUT_STEPS=[
     done:()=>['0,1','1,1','2,1'].every(k=>st.x.has(k))},
   {hl:()=>[cellQ(3,2)], allow:()=>['#board'],
     done:()=>st.x.has('3,2')},
-  {hl:()=>['#optBtn'], arrow:()=>'#optBtn', autoOn:true, next:true},
+  {hl:()=>['#optBtn'], arrow:()=>'#optBtn', autoOn:true, next:true, optNext:true},
   {hl:()=>[sel===3?cellQ(0,0):'.card[data-i="3"]'], done:()=>at(3,0,0)},
   {hl:()=>[sel===1?cellQ(1,2):'.card[data-i="1"]'], done:()=>at(1,1,2)},
   {hl:()=>[sel===0?cellQ(2,3):'.card[data-i="0"]'], done:()=>at(0,2,3)},
@@ -1657,6 +1675,8 @@ function tutTick(){
   if(tgt){ const R=tgt.getBoundingClientRect(); if(R.top<60||R.bottom>innerHeight-90) tgt.scrollIntoView({block:'center',behavior:noAnim()?'auto':'smooth'}) }
   placeArrow(); setTimeout(placeArrow,400);
 }
+/* 這一步是請玩家去看設定：看完關掉就直接往下走，不用再按「下一步」 */
+function tutOptClosed(){ if(!TUT.active||!TUT_STEPS[TUT.step].optNext) return; TUT.step++; tutTick() }
 /* 教學中只允許點這一步需要的地方 */
 ['pointerdown','click'].forEach(ev=>document.addEventListener(ev,e=>{
   if(!TUT.active||$('#gameView').hidden||!$('#stage').hidden||!$('#optModal').hidden) return;
