@@ -8,12 +8,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fff8fc" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1a0f17" media="(prefers-color-scheme: dark)">
-<title>戀毒 KOIDOKU｜狗仔推理謎題遊戲</title>
+<title>戀毒 KOIDOKU｜狗仔推理益智遊戲</title>
 <meta name="description" content="每行每列剛好一個人，找出目標藝人的緋聞對象吧！">
 <link rel="canonical" href="https://nikaworx.com/games/koidoku/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://nikaworx.com/games/koidoku/">
-<meta property="og:title" content="戀毒 KOIDOKU｜狗仔推理謎題遊戲">
+<meta property="og:title" content="戀毒 KOIDOKU｜狗仔推理益智遊戲">
 <meta property="og:description" content="每行每列剛好一個人，找出目標藝人的緋聞對象吧！">
 <link rel="icon" type="image/png" sizes="32x32" href="art/ui/icon-32.png">
 <link rel="apple-touch-icon" href="art/ui/icon-180.png">
@@ -473,8 +473,8 @@ details ul{margin:6px 0 0;padding-left:18px}
 /* 手機上這幾層不存在，內容照原本順序直排 */
 .gmain,.gside,.gtop{display:contents}
 /* 電腦和橫放的平板：上下橫條貫穿畫面，中間盤面在左、線索在右，不用上下捲動。
-   高度條件是為了排除橫放的手機；它們維持直排。 */
-@media (min-width:900px) and (min-height:600px){
+   高度條件排除橫放的手機，比例條件排除直放的大平板；它們維持直排。 */
+@media (min-width:900px) and (min-height:600px) and (min-aspect-ratio:1/1){
   :root{--topH:calc(55px + env(safe-area-inset-top,0px));--botH:calc(65px + env(safe-area-inset-bottom,0px))}
   body.playing{margin:0;padding-top:calc(var(--topH) + 14px);padding-bottom:calc(var(--botH) + 14px)}
   #gameView{--bw:clamp(360px,100vh - var(--topH) - var(--botH) - 28px,min(56vw,720px));
